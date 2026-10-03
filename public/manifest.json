@@ -1,0 +1,16 @@
+{
+  "name": "WeatherGPT AI",
+  "short_name": "WeatherGPT",
+  "description": "AI-powered chatbot platform for meteorological datasets, forecasting, and disaster warnings.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f1c3d",
+  "theme_color": "#0f1c3d",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64",
+      "type": "image/x-icon"
+    }
+  ]
+}

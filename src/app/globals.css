@@ -2,9 +2,30 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer utilities {
+  @keyframes marquee {
+    0% { transform: translateX(100%); }
+    100% { transform: translateX(-100%); }
+  }
+  .animate-marquee {
+    display: inline-block;
+    animation: marquee 20s linear infinite;
+  }
+}
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
+}
+
+.high-contrast-mode {
+  filter: invert(1) hue-rotate(180deg);
+  background-color: #000;
+}
+
+.high-contrast-mode img,
+.high-contrast-mode .leaflet-container {
+  filter: invert(1) hue-rotate(180deg);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -24,4 +45,12 @@ body {
   .text-balance {
     text-wrap: balance;
   }
+}
+
+.custom-scrollbar::-webkit-scrollbar { 
+  width: 4px; 
+} 
+.custom-scrollbar::-webkit-scrollbar-thumb { 
+  background-color: rgba(255,255,255,0.1); 
+  border-radius: 4px; 
 }
