@@ -1,4 +1,4 @@
-ï»¿'use client';
+'use client';
 import { useState, useRef, useEffect } from 'react';
 import { Bot, X, Send, Loader2, User, Sparkles, Mic, Plus, ChevronDown, Glasses, Image as ImageIcon } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
@@ -40,6 +40,26 @@ export default function FloatingAI() {
     setInput("");
     setIsLoading(true);
 
+    // --- HARDCODED DEMO WORKFLOW ---
+    if (text.toLowerCase().includes("noida")) {
+      setTimeout(() => {
+        setMessages([...newMessages, { role: 'model', content: "Heavy rainfall is likely between **2 PM and 7 PM tomorrow**. \n\n* Estimated rainfall: **68–92 mm**\n* Flood risk: **Moderate**\n\nShould I show nearby flood-prone areas?" }]);
+        setIsLoading(false);
+      }, 1500);
+      return;
+    }
+    
+    if (text.toLowerCase().includes("yes") && messages.some(m => m.content.includes("Should I show nearby flood-prone areas"))) {
+       setTimeout(() => {
+        setMessages([...newMessages, { role: 'model', content: "Opening VAYU GIS Map now..." }]);
+        setTimeout(() => {
+          window.location.href = '/gis-mapping';
+        }, 1000);
+      }, 1000);
+      return;
+    }
+    // --------------------------------
+
     try {
       const response = await fetch('/api/chat', {
         method: 'POST',
@@ -62,7 +82,7 @@ export default function FloatingAI() {
   };
 
   const suggestions = [
-    "Check rainfall probability", "What is the active regime?", 
+    "Will it rain heavily in Noida tomorrow?", "What is the active regime?", 
     "Give me agriculture advice", "Show current warnings",
     "Prepare flood safety checklist"
   ];
@@ -202,4 +222,5 @@ export default function FloatingAI() {
     </>
   );
 }
+
 

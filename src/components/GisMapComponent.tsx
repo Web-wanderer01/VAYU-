@@ -1,11 +1,11 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
-import { MapContainer, TileLayer, LayersControl, useMap, useMapEvents, Circle, Popup, Marker, Polygon, Polyline } from 'react-leaflet';
+import { useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
+import { MapContainer, TileLayer, Marker, Popup, Polyline, LayersControl, Polygon, Circle, useMap, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
-import { Layers, CloudRain, Crosshair, Map as MapIcon, Navigation, Maximize, Play, Pause, FastForward, Download, Ruler, Hexagon, Activity, ChevronRight, ChevronLeft, Terminal, Plane, ShieldAlert, Wifi, BatteryCharging } from 'lucide-react';
+import { Layers, Crosshair, Map as MapIcon, Navigation, Maximize, Play, Pause, FastForward, Download, Ruler, Hexagon, Activity, ChevronRight, ChevronLeft, Terminal, Plane, ShieldAlert, Wifi, BatteryCharging, CloudRain, Zap, Wind, Navigation2 } from 'lucide-react';
 
-// Icons
 const redIcon = new L.Icon({ iconUrl: 'https://cdn.rawgit.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png', shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png', iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41] });
 const orangeIcon = new L.Icon({ iconUrl: 'https://cdn.rawgit.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-orange.png', shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png', iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41] });
 const yellowIcon = new L.Icon({ iconUrl: 'https://cdn.rawgit.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-yellow.png', shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png', iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41] });
@@ -17,7 +17,6 @@ const droneIcon = new L.DivIcon({
   iconAnchor: [15, 15]
 });
 
-// Map Movement Controller
 function MapController({ targetCenter, targetZoom }: { targetCenter: [number, number], targetZoom: number }) {
   const map = useMap();
   useEffect(() => {
@@ -26,245 +25,191 @@ function MapController({ targetCenter, targetZoom }: { targetCenter: [number, nu
   return null;
 }
 
-// Map Click Handler for Measuring
 function MapEvents({ onMapClick }: { onMapClick: (latlng: L.LatLng) => void }) {
-  useMapEvents({
-    click(e) {
-      onMapClick(e.latlng);
-    },
-  });
+  useMapEvents({ click(e) { onMapClick(e.latlng); } });
   return null;
 }
 
 export default function GisMapComponent() {
   const [radarTime, setRadarTime] = useState<number | null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [forecastHour, setForecastHour] = useState(0); 
   const [mapCenter, setMapCenter] = useState<[number, number]>([20.296, 85.824]); 
   const [mapZoom, setMapZoom] = useState<number>(6);
   const [sidebarOpen, setSidebarOpen] = useState(true);
-
-  // Active Layers
   const [activeLayers, setActiveLayers] = useState({ radar: true, floodRisk: false, infrastructure: true, polygons: true });
-
-  // 1. Drone Tracking State
   const [dronePos, setDronePos] = useState<[number, number]>([20.100, 85.900]);
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setDronePos(prev => [prev[0] + 0.001, prev[1] - 0.002]); // Moves north-west slightly
-    }, 2000);
-    return () => clearInterval(interval);
-  }, []);
-
-  // 2. Affected Zone Polygons State
   const [selectedZone, setSelectedZone] = useState<string | null>(null);
-  const odishaPolygon: [number, number][] = [ [20.5, 86.5], [19.8, 86.2], [19.5, 85.0], [20.0, 84.8], [21.0, 85.5] ];
-  const mumbaiPolygon: [number, number][] = [ [19.5, 72.7], [18.8, 72.7], [18.8, 73.2], [19.5, 73.2] ];
-
-  // 3. Live Terminal Log Overlay State
-  const mockLogStream = [
-    "Ingesting ISRO satellite telemetry...",
-    "VAYU ML: Recalculating flood contours in Sector 4...",
-    "Anomaly detected: Water level rise near Cuttack...",
-    "Syncing drone visual data to command center...",
-    "Analyzing spectral bands for crop damage...",
-    "NDRF Battalion 4 reports on-ground validation.",
-    "Updating predictive model weights (Epoch 420)...",
-    "Processing radar reflection data from Doppler..."
-  ];
-  const [logs, setLogs] = useState<string[]>(['[SYS] VAYU GIS Initialized...']);
-  
-  useEffect(() => {
-    const logInterval = setInterval(() => {
-      const now = new Date();
-      const timeStr = `[${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}]`;
-      const randomLog = mockLogStream[Math.floor(Math.random() * mockLogStream.length)];
-      setLogs(prev => [...prev.slice(-4), `${timeStr} ${randomLog}`]);
-    }, 4000);
-    return () => clearInterval(logInterval);
-  }, []);
-
-  // 4. Distance Measurement Tool State
   const [measureMode, setMeasureMode] = useState(false);
-  const [measurePoints, setMeasurePoints] = useState<L.LatLng[]>([]);
+  const [measurePoints, setMeasurePoints] = useState<[number, number][]>([]);
   const [measureDistance, setMeasureDistance] = useState<number | null>(null);
+  const [timeline, setTimeline] = useState('NOW');
 
-  const handleMapClick = (latlng: L.LatLng) => {
-    if (!measureMode) return;
-    if (measurePoints.length === 0) {
-      setMeasurePoints([latlng]);
-      setMeasureDistance(null);
-    } else if (measurePoints.length === 1) {
-      const dist = measurePoints[0].distanceTo(latlng) / 1000; // in km
-      setMeasurePoints([measurePoints[0], latlng]);
-      setMeasureDistance(dist);
-      setMeasureMode(false); // turn off after measuring
-    } else {
-      setMeasurePoints([latlng]);
-      setMeasureDistance(null);
-    }
-  };
+  const odishaPolygon: [number, number][] = [ [19.0, 84.5], [21.5, 87.0], [21.0, 87.5], [18.5, 85.0] ];
+  const mumbaiPolygon: [number, number][] = [ [19.2, 72.8], [19.2, 73.0], [18.9, 73.0], [18.9, 72.8] ];
+  const logs = [ "> Establishing connection to VAYU-SAT-1...", "> Weather model synchronized.", "> Processing radar telemetry.", "> AI Risk Engine analyzing." ];
 
-  // Fetch RainViewer timestamp
   useEffect(() => {
     fetch('https://api.rainviewer.com/public/weather-maps.json')
       .then(res => res.json())
-      .then(data => {
-        if (data.radar && data.radar.past && data.radar.past.length > 0) {
-          setRadarTime(data.radar.past[data.radar.past.length - 1].time);
-        }
-      });
+      .then(data => { if (data.radar && data.radar.past && data.radar.past.length > 0) setRadarTime(data.radar.past[data.radar.past.length - 1].time); });
   }, []);
 
-  const handleQuickJump = (lat: number, lng: number, zoom: number) => {
+  useEffect(() => {
+    const interval = setInterval(() => { setDronePos(prev => [prev[0] + 0.001, prev[1] - 0.002]); }, 2000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleQuickJump = (lat: number, lng: number, zoom: number, zoneName: string) => {
     setMapCenter([lat, lng]);
     setMapZoom(zoom);
+    setSelectedZone(zoneName);
+    setSidebarOpen(true);
   };
 
+  const handleMapClick = (latlng: L.LatLng) => {
+    if (measureMode) {
+      const newPoints = [...measurePoints, [latlng.lat, latlng.lng] as [number, number]];
+      setMeasurePoints(newPoints);
+      if (newPoints.length > 1) {
+        let dist = 0;
+        for (let i = 0; i < newPoints.length - 1; i++) {
+          const p1 = L.latLng(newPoints[i][0], newPoints[i][1]);
+          const p2 = L.latLng(newPoints[i+1][0], newPoints[i+1][1]);
+          dist += p1.distanceTo(p2) / 1000;
+        }
+        setMeasureDistance(dist);
+      }
+    }
+  };
+
+  const timeOptions = ['NOW', '+3H', '+6H', '+12H', '+24H', '+48H'];
+
   return (
-    <div className="relative w-full h-[calc(100vh-64px)] overflow-hidden bg-black z-0 flex">
+    <div className="relative w-full h-[calc(100vh-64px)] flex overflow-hidden bg-black font-sans">
       
-      {/* SIDEBAR CONTROL PANEL */}
-      <div className={`absolute left-0 top-0 h-full bg-[#0a1128]/95 backdrop-blur-md border-r border-blue-900/50 text-white transition-all duration-300 z-[1000] flex flex-col ${sidebarOpen ? 'w-80' : 'w-0 -translate-x-full'}`}>
+      {/* VAYU IMPACT ENGINE SIDEBAR */}
+      <div className={`absolute left-0 top-0 h-full bg-[#0a1128]/95 backdrop-blur-md border-r border-blue-900/50 text-white transition-all duration-300 z-[1000] flex flex-col ${sidebarOpen ? 'w-[400px]' : 'w-0 -translate-x-full'}`}>
         
         <div className="p-5 border-b border-blue-900/50 flex justify-between items-center bg-[#060b19]">
           <h2 className="font-black text-lg flex items-center tracking-wider text-cyan-400">
-            <Layers className="mr-2" size={20}/> VAYU GIS Layers
+            <Zap className="mr-2 text-yellow-400" size={20}/> VAYU IMPACT ENGINE
           </h2>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-5 space-y-8">
+        <div className="flex-1 overflow-y-auto p-5 space-y-6 custom-scrollbar">
           
-          {/* Layer Toggles */}
+          {/* Timeline */}
           <div>
-            <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">AI & Weather Overlays</h3>
-            <div className="space-y-3">
-              <label className="flex items-center space-x-3 cursor-pointer group">
-                <input type="checkbox" checked={activeLayers.radar} onChange={() => setActiveLayers({...activeLayers, radar: !activeLayers.radar})} className="w-4 h-4 rounded border-gray-600 text-blue-500 focus:ring-blue-500 bg-gray-800" />
-                <span className="text-sm font-medium group-hover:text-blue-300 transition">Precipitation Radar (Live)</span>
-              </label>
-              <label className="flex items-center space-x-3 cursor-pointer group">
-                <input type="checkbox" checked={activeLayers.floodRisk} onChange={() => setActiveLayers({...activeLayers, floodRisk: !activeLayers.floodRisk})} className="w-4 h-4 rounded border-gray-600 text-red-500 focus:ring-red-500 bg-gray-800" />
-                <span className="text-sm font-medium group-hover:text-red-400 transition">AI Flood Risk Heatmap</span>
-              </label>
-              <label className="flex items-center space-x-3 cursor-pointer group">
-                <input type="checkbox" checked={activeLayers.polygons} onChange={() => setActiveLayers({...activeLayers, polygons: !activeLayers.polygons})} className="w-4 h-4 rounded border-gray-600 text-purple-500 focus:ring-purple-500 bg-gray-800" />
-                <span className="text-sm font-medium group-hover:text-purple-400 transition">Disaster Impact Zones</span>
-              </label>
+            <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Prediction Timeline</h3>
+            <div className="flex space-x-1 bg-gray-900/50 p-1 rounded-lg border border-gray-800">
+              {timeOptions.map(t => (
+                <button 
+                  key={t} onClick={() => setTimeline(t)}
+                  className={`flex-1 py-1.5 text-[10px] font-bold rounded transition-colors ${timeline === t ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+                >
+                  {t}
+                </button>
+              ))}
             </div>
           </div>
 
-          {/* Quick Jump */}
-          <div>
-            <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">Active Disaster Zones</h3>
-            <div className="space-y-2">
-              <button onClick={() => handleQuickJump(20.296, 85.824, 8)} className="w-full text-left px-3 py-2 bg-blue-900/30 hover:bg-blue-800/50 border border-blue-800/50 rounded-lg text-sm transition flex justify-between items-center group">
-                <span>Odisha Coast (Cyclone)</span>
-                <Crosshair size={14} className="text-blue-400 opacity-0 group-hover:opacity-100 transition"/>
-              </button>
-              <button onClick={() => handleQuickJump(19.076, 72.877, 9)} className="w-full text-left px-3 py-2 bg-orange-900/30 hover:bg-orange-800/50 border border-orange-800/50 rounded-lg text-sm transition flex justify-between items-center group">
-                <span>Mumbai (Urban Flood)</span>
-                <Crosshair size={14} className="text-orange-400 opacity-0 group-hover:opacity-100 transition"/>
-              </button>
+          {/* Location Selection */}
+          {!selectedZone ? (
+            <div className="space-y-4">
+               <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Active Hazard Zones</h3>
+               <button onClick={() => handleQuickJump(20.296, 85.824, 8, 'Odisha Coast')} className="w-full text-left p-4 bg-gradient-to-br from-red-900/30 to-black border border-red-800/50 rounded-xl hover:bg-red-900/50 transition group">
+                 <div className="flex justify-between items-start mb-2">
+                   <h4 className="font-bold text-red-400 flex items-center"><Wind size={16} className="mr-2"/> Odisha Coast (Cyclone)</h4>
+                   <span className="bg-red-600 text-white text-[9px] px-2 py-0.5 rounded font-bold animate-pulse">RED ALERT</span>
+                 </div>
+                 <p className="text-xs text-gray-400">Predicted landfall near Puri. High risk of storm surge.</p>
+               </button>
+               <button onClick={() => handleQuickJump(19.076, 72.877, 9, 'Mumbai Suburbs')} className="w-full text-left p-4 bg-gradient-to-br from-orange-900/30 to-black border border-orange-800/50 rounded-xl hover:bg-orange-900/50 transition group">
+                 <div className="flex justify-between items-start mb-2">
+                   <h4 className="font-bold text-orange-400 flex items-center"><CloudRain size={16} className="mr-2"/> Mumbai (Urban Flood)</h4>
+                   <span className="bg-orange-600 text-white text-[9px] px-2 py-0.5 rounded font-bold">ORANGE</span>
+                 </div>
+                 <p className="text-xs text-gray-400">Extreme localized precipitation. Drainage systems overwhelmed.</p>
+               </button>
             </div>
-          </div>
-          
-          {/* Status */}
-          <div className="p-4 bg-green-900/20 border border-green-800/50 rounded-xl">
-             <div className="flex items-center text-green-400 text-xs font-bold mb-1">
-               <Activity size={14} className="mr-2 animate-pulse"/> VAYU SERVER SYNCED
-             </div>
-             <p className="text-[10px] text-gray-400">Model weights synchronized 2m ago.</p>
-          </div>
+          ) : (
+            <div className="space-y-6 animate-in slide-in-from-right-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-black text-white flex items-center"><Navigation2 size={18} className="mr-2 text-cyan-400"/> {selectedZone}</h3>
+                <button onClick={() => setSelectedZone(null)} className="text-xs text-gray-400 hover:text-white underline">Back to overview</button>
+              </div>
+
+              {/* Explainable AI Block */}
+              <div className="bg-gray-900/80 rounded-xl border border-gray-700 overflow-hidden">
+                <div className="bg-gray-800/50 px-4 py-2 border-b border-gray-700 flex justify-between items-center">
+                  <span className="text-[10px] uppercase font-bold text-gray-300">Explainable AI (XAI)</span>
+                  <span className="text-[10px] font-bold text-green-400 bg-green-400/10 px-2 py-0.5 rounded">87% CONFIDENCE</span>
+                </div>
+                <div className="p-4 space-y-3 text-xs">
+                  <div className="flex justify-between"><span className="text-gray-400">Rainfall Forecast:</span><span className="text-red-400 font-bold">+42% vs Normal</span></div>
+                  <div className="flex justify-between"><span className="text-gray-400">Soil Saturation:</span><span className="text-orange-400 font-bold">91% (Critical)</span></div>
+                  <div className="flex justify-between"><span className="text-gray-400">River Level:</span><span className="text-red-400 font-bold">+1.8m</span></div>
+                  <div className="flex justify-between"><span className="text-gray-400">Drainage Capacity:</span><span className="text-yellow-400 font-bold">Low</span></div>
+                  <div className="flex justify-between"><span className="text-gray-400">Historical Flood Correl:</span><span className="text-white font-bold">High</span></div>
+                </div>
+              </div>
+
+              {/* Impact Engine Block */}
+              <div className="bg-gradient-to-br from-red-900/20 to-black rounded-xl border border-red-900/50 overflow-hidden">
+                <div className="bg-red-900/30 px-4 py-2 border-b border-red-900/50 flex justify-between items-center">
+                   <span className="text-[10px] uppercase font-bold text-red-400 tracking-wider">Projected Impact ({timeline})</span>
+                </div>
+                <div className="p-4 grid grid-cols-2 gap-4 text-xs">
+                   <div><div className="text-gray-500 text-[10px] uppercase">Flood Probability</div><div className="text-xl font-black text-red-500">82%</div></div>
+                   <div><div className="text-gray-500 text-[10px] uppercase">People at Risk</div><div className="text-xl font-black text-white">3,420</div></div>
+                   <div><div className="text-gray-500 text-[10px] uppercase">Villages Affected</div><div className="text-lg font-bold text-orange-400">12</div></div>
+                   <div><div className="text-gray-500 text-[10px] uppercase">Roads Blocked</div><div className="text-lg font-bold text-orange-400">2</div></div>
+                </div>
+              </div>
+
+              {/* Recommended Action */}
+              <div className="border border-red-500/50 bg-red-500/10 rounded-xl p-4">
+                <h4 className="text-[10px] font-bold text-red-500 uppercase tracking-widest mb-2 flex items-center"><ShieldAlert size={14} className="mr-2"/> AI Recommended Action</h4>
+                <p className="text-xs text-white font-bold mb-1">EVACUATION RECOMMENDED</p>
+                <p className="text-xs text-gray-400 mb-4">Low-lying coastal settlements within 2.5 km should be alerted and evacuated immediately.</p>
+                <button className="w-full bg-red-600 hover:bg-red-500 text-white font-bold text-xs py-2.5 rounded shadow-lg shadow-red-900/50 transition">
+                   BROADCAST RED ALERT TO {selectedZone.toUpperCase()}
+                </button>
+              </div>
+
+            </div>
+          )}
         </div>
       </div>
 
       {/* Sidebar Toggle Button */}
       <button 
         onClick={() => setSidebarOpen(!sidebarOpen)}
-        className={`absolute top-1/2 -translate-y-1/2 z-[1001] bg-[#0a1128] border border-blue-900/50 text-white p-1 py-4 rounded-r-lg shadow-2xl transition-all duration-300 ${sidebarOpen ? 'left-80' : 'left-0'}`}
+        className={`absolute top-1/2 -translate-y-1/2 z-[1001] bg-[#0a1128] border border-blue-900/50 text-white p-1 py-4 rounded-r-lg shadow-2xl transition-all duration-300 ${sidebarOpen ? 'left-[400px]' : 'left-0'}`}
       >
         {sidebarOpen ? <ChevronLeft size={20}/> : <ChevronRight size={20}/>}
       </button>
 
-      {/* ZONE IMPACT STATS PANEL (Appears when Polygon is clicked) */}
-      {selectedZone && (
-        <div className={`absolute top-20 right-20 z-[1000] w-80 bg-[#0a1128]/95 backdrop-blur-md border border-purple-500/50 rounded-xl shadow-[0_0_20px_rgba(168,85,247,0.3)] text-white overflow-hidden transition-all duration-300`}>
-          <div className="bg-gradient-to-r from-purple-900 to-[#0a1128] p-4 flex justify-between items-center border-b border-purple-800">
-            <h3 className="font-bold flex items-center text-sm"><ShieldAlert size={16} className="mr-2 text-purple-400"/> {selectedZone} Zone Data</h3>
-            <button onClick={() => setSelectedZone(null)} className="text-gray-400 hover:text-white">&times;</button>
-          </div>
-          <div className="p-4 space-y-4">
-            <div>
-              <div className="text-[10px] uppercase text-gray-400 tracking-wider">Estimated Pop. Affected</div>
-              <div className="text-2xl font-black text-red-400">{selectedZone === 'Odisha Coast' ? '2.4 Million' : '1.8 Million'}</div>
-            </div>
-            <div>
-              <div className="text-[10px] uppercase text-gray-400 tracking-wider">Agri. Loss Probability</div>
-              <div className="text-lg font-bold text-orange-400">High (85% via VAYU)</div>
-            </div>
-            <div className="pt-2 border-t border-gray-800">
-              <button className="w-full bg-purple-600 hover:bg-purple-500 py-2 rounded text-xs font-bold transition">Deploy Relief Materials</button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* LIVE DRONE TELEMETRY OVERLAY */}
       <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[1000] bg-black/80 backdrop-blur border border-cyan-500/50 rounded-lg p-3 flex space-x-6 text-white shadow-[0_0_15px_rgba(6,182,212,0.3)] pointer-events-none">
-        <div className="flex items-center text-cyan-400 animate-pulse mr-2">
-          <Plane size={16} className="mr-2"/> NDRF-UAV-1
-        </div>
-        <div className="text-xs">
-          <div className="text-gray-400">ALT</div>
-          <div className="font-mono">142m</div>
-        </div>
-        <div className="text-xs">
-          <div className="text-gray-400">SPD</div>
-          <div className="font-mono">24km/h</div>
-        </div>
-        <div className="text-xs">
-          <div className="text-gray-400">BAT</div>
-          <div className="font-mono flex items-center"><BatteryCharging size={12} className="mr-1 text-green-400"/> 78%</div>
-        </div>
-        <div className="text-xs border-l border-gray-700 pl-4">
-          <div className="text-gray-400">COORD</div>
-          <div className="font-mono text-cyan-300">{dronePos[0].toFixed(4)}, {dronePos[1].toFixed(4)}</div>
-        </div>
-      </div>
-
-      {/* LIVE TERMINAL LOG OVERLAY */}
-      <div className={`absolute bottom-28 left-4 z-[1000] w-96 bg-black/90 border border-gray-800 rounded-lg shadow-xl font-mono text-[10px] overflow-hidden transition-all duration-300 ${sidebarOpen ? 'ml-80' : ''}`}>
-        <div className="bg-gray-900 px-3 py-1 flex items-center border-b border-gray-800 text-gray-500">
-          <Terminal size={12} className="mr-2"/> VAYU SYSTEM TERMINAL
-        </div>
-        <div className="p-3 space-y-1 h-28 overflow-y-auto">
-          {logs.map((log, i) => (
-            <div key={i} className="text-green-500">{log}</div>
-          ))}
-          <div className="text-green-500 animate-pulse">_</div>
-        </div>
+        <div className="flex items-center text-cyan-400 animate-pulse mr-2"><Plane size={16} className="mr-2"/> NDRF-UAV-1</div>
+        <div className="text-xs"><div className="text-gray-400">ALT</div><div className="font-mono">142m</div></div>
+        <div className="text-xs"><div className="text-gray-400">SPD</div><div className="font-mono">24km/h</div></div>
+        <div className="text-xs"><div className="text-gray-400">BAT</div><div className="font-mono flex items-center"><BatteryCharging size={12} className="mr-1 text-green-400"/> 78%</div></div>
       </div>
 
       {/* ANALYSIS TOOLKIT (Floating Right) */}
       <div className="absolute right-4 top-4 z-[1000] flex flex-col space-y-2">
         <div className="bg-[#0a1128]/90 backdrop-blur rounded-lg border border-gray-800 shadow-2xl p-1 flex flex-col space-y-1">
-          <button 
-            onClick={() => { setMeasureMode(!measureMode); setMeasurePoints([]); setMeasureDistance(null); }}
-            className={`p-3 rounded transition group relative ${measureMode ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-800 hover:text-white'}`}
-          >
+          <button onClick={() => { setMeasureMode(!measureMode); setMeasurePoints([]); setMeasureDistance(null); }} className={`p-3 rounded transition group relative ${measureMode ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-800 hover:text-white'}`}>
             <Ruler size={18} />
             <span className="absolute right-full mr-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-black text-xs rounded opacity-0 group-hover:opacity-100 whitespace-nowrap text-white">Measure Distance</span>
           </button>
-          
           <div className="h-px bg-gray-700 mx-2 my-1"></div>
           <button className="p-3 hover:bg-gray-800 rounded text-gray-300 hover:text-white transition group relative">
             <Download size={18} />
             <span className="absolute right-full mr-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-black text-xs rounded opacity-0 group-hover:opacity-100 whitespace-nowrap text-white">Export GeoJSON</span>
           </button>
         </div>
-
-        {/* Measure Result Box */}
         {measureDistance !== null && (
           <div className="bg-blue-900/90 backdrop-blur border border-blue-500 rounded p-3 shadow-lg text-white text-center mt-2 animate-in fade-in zoom-in">
             <div className="text-[10px] text-blue-300 uppercase tracking-wider mb-1">Distance</div>
@@ -280,64 +225,29 @@ export default function GisMapComponent() {
           <MapEvents onMapClick={handleMapClick} />
           
           <LayersControl position="topright">
-            {/* Base Maps */}
             <LayersControl.BaseLayer checked name="Dark Satellite (Command)">
               <TileLayer url="https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png" attribution='&copy; Stadia Maps' />
-            </LayersControl.BaseLayer>
-            <LayersControl.BaseLayer name="Real Satellite Imagery">
-              <TileLayer url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}" attribution='&copy; Esri' />
             </LayersControl.BaseLayer>
             <LayersControl.BaseLayer name="Terrain / Topo">
               <TileLayer url="https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png" attribution='&copy; OpenTopoMap' />
             </LayersControl.BaseLayer>
-
-            {/* AI / Radar Overlays */}
             {activeLayers.radar && radarTime && (
-              <TileLayer
-                url={`https://tilecache.rainviewer.com/v2/radar/${radarTime}/256/{z}/{x}/{y}/2/1_1.png`}
-                opacity={0.8}
-                zIndex={10}
-              />
+              <TileLayer url={`https://tilecache.rainviewer.com/v2/radar/${radarTime}/256/{z}/{x}/{y}/2/1_1.png`} opacity={0.8} zIndex={10} />
             )}
           </LayersControl>
 
-          {/* MEASUREMENT POLYLINE */}
-          {measurePoints.length > 0 && (
-            <Polyline positions={measurePoints} color="cyan" weight={3} dashArray="5, 10" />
-          )}
-
-          {/* DRONE TRACKER */}
+          {measurePoints.length > 0 && <Polyline positions={measurePoints} color="cyan" weight={3} dashArray="5, 10" />}
           <Marker position={dronePos} icon={droneIcon} zIndexOffset={1000} />
-
-          {/* NATIONWIDE ALERTS */}
           <Marker position={[20.296, 85.824]} icon={redIcon}><Popup><strong>Cyclone Alert (Red)</strong><br/>Odisha Coast</Popup></Marker>
           <Marker position={[19.076, 72.877]} icon={orangeIcon}><Popup><strong>Urban Flood (Orange)</strong><br/>Mumbai</Popup></Marker>
           <Marker position={[31.104, 77.173]} icon={yellowIcon}><Popup><strong>Landslide Risk (Yellow)</strong><br/>Himachal Pradesh</Popup></Marker>
 
-          {/* INTERACTIVE POLYGONS */}
           {activeLayers.polygons && (
             <>
-              <Polygon 
-                positions={odishaPolygon} 
-                pathOptions={{ color: 'purple', fillColor: 'purple', fillOpacity: 0.3, weight: 2 }}
-                eventHandlers={{ click: () => setSelectedZone('Odisha Coast') }}
-              />
-              <Polygon 
-                positions={mumbaiPolygon} 
-                pathOptions={{ color: 'purple', fillColor: 'purple', fillOpacity: 0.3, weight: 2 }}
-                eventHandlers={{ click: () => setSelectedZone('Mumbai Suburbs') }}
-              />
+              <Polygon positions={odishaPolygon} pathOptions={{ color: 'red', fillColor: 'red', fillOpacity: 0.3, weight: 2 }} eventHandlers={{ click: () => setSelectedZone('Odisha Coast') }} />
+              <Polygon positions={mumbaiPolygon} pathOptions={{ color: 'orange', fillColor: 'orange', fillOpacity: 0.3, weight: 2 }} eventHandlers={{ click: () => setSelectedZone('Mumbai Suburbs') }} />
             </>
           )}
-
-          {/* MOCK: AI Flood Risk Heatmap */}
-          {activeLayers.floodRisk && (
-            <>
-              <Circle center={[20.296, 85.824]} radius={40000} pathOptions={{ color: 'red', fillColor: 'red', fillOpacity: 0.3 }} />
-              <Circle center={[19.076, 72.877]} radius={25000} pathOptions={{ color: 'orange', fillColor: 'orange', fillOpacity: 0.4 }} />
-            </>
-          )}
-
         </MapContainer>
       </div>
 
@@ -365,4 +275,3 @@ export default function GisMapComponent() {
     </div>
   );
 }
-
