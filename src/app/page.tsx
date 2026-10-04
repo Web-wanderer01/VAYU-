@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import { useState } from 'react';
 import { CloudRain, Wind, AlertTriangle, Thermometer, Navigation, Activity, Target, ShieldAlert, CheckCircle, Droplets, Map, ChevronRight, Mic, Smartphone, Zap, Globe, Users } from 'lucide-react';
 import dynamic from 'next/dynamic';
@@ -141,17 +141,17 @@ export default function Home() {
                       <div className="flex justify-between items-start mb-2">
                          <h4 className="font-bold text-sm">NEW DELHI-SAFDARJUNG</h4>
                          <div className="flex flex-col items-end space-y-1">
-                            <span className="text-gray-300">Haze ☁️</span>
+                            <span className="text-gray-300">Haze â˜ï¸</span>
                             <span className="bg-purple-500/30 text-purple-200 border border-purple-500/50 px-2 py-0.5 rounded text-[9px] font-bold tracking-widest uppercase">Regime: Active</span>
                             <span className="bg-red-500/30 text-red-200 border border-red-500/50 px-2 py-0.5 rounded text-[9px] font-bold tracking-widest uppercase">Heavy Rain Prob: 78% (DEMO)</span>
                          </div>
                       </div>
                       <div className="flex space-x-4 mb-2">
-                         <span>🌡️ 28.6°C</span>
-                         <span>Feel Like 31.7°C</span>
-                         <span>💧 69%</span>
+                         <span>ðŸŒ¡ï¸ 28.6Â°C</span>
+                         <span>Feel Like 31.7Â°C</span>
+                         <span>ðŸ’§ 69%</span>
                       </div>
-                      <div className="text-gray-300 mb-2 font-bold text-green-400">💨 Bias-Corrected NWP Output</div>
+                      <div className="text-gray-300 mb-2 font-bold text-green-400">ðŸ’¨ Bias-Corrected NWP Output</div>
                       <div className="grid grid-cols-4 gap-2 text-center text-[10px] text-gray-400 mt-2 border-t border-white/20 pt-2">
                          <div><div className="font-bold text-white mb-1">Sunrise</div>06:15 (IST)</div>
                          <div><div className="font-bold text-white mb-1">Sunset</div>18:06 (IST)</div>
@@ -172,7 +172,7 @@ export default function Home() {
                   <h3 className="text-center font-bold text-blue-600 tracking-widest uppercase mb-2 text-[10px]">SATELLITE</h3>
                   <div className="w-full h-[368px] rounded-xl border border-gray-200 overflow-hidden relative bg-black">
                      <div className="absolute top-2 left-2 right-2 bg-black/80 text-green-400 p-2 text-[8px] font-mono leading-tight z-10 rounded border border-gray-700">
-                        <div>INSAT-3DS IMG, Thermal Infrared1 Count @ 10.83 μm</div>
+                        <div>INSAT-3DS IMG, Thermal Infrared1 Count @ 10.83 Î¼m</div>
                         <div>GMT: 03-10-2026/(1600-1627) IST: 03-10-2026/(2130-2157)</div>
                      </div>
                      {/* Simulating the satellite map */}

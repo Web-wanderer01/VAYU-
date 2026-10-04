@@ -1,4 +1,4 @@
-export default function Ticker() {
+﻿export default function Ticker() {
   return (
     <div className="bg-white border-t-2 border-red-500 w-full flex items-center text-sm">
       <div className="bg-red-500 text-white font-bold px-4 py-2 uppercase whitespace-nowrap">

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import { useState, useRef, useEffect } from 'react';
 import { Bot, X, Send, Loader2, User, Sparkles, Mic, Plus, ChevronDown, Glasses, Image as ImageIcon } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
@@ -43,7 +43,7 @@ export default function FloatingAI() {
     // --- HARDCODED DEMO WORKFLOW ---
     if (text.toLowerCase().includes("noida")) {
       setTimeout(() => {
-        setMessages([...newMessages, { role: 'model', content: "Heavy rainfall is likely between **2 PM and 7 PM tomorrow**. \n\n* Estimated rainfall: **68�92 mm**\n* Flood risk: **Moderate**\n\nShould I show nearby flood-prone areas?" }]);
+        setMessages([...newMessages, { role: 'model', content: "Heavy rainfall is likely between **2 PM and 7 PM tomorrow**. \n\n* Estimated rainfall: **68–92 mm**\n* Flood risk: **Moderate**\n\nShould I show nearby flood-prone areas?" }]);
         setIsLoading(false);
       }, 1500);
       return;

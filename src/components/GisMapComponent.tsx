@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, LayersControl, Polygon, Circle, useMap, useMapEvents } from 'react-leaflet';
