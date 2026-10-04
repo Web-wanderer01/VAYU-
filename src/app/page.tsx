@@ -143,7 +143,7 @@ export default function Home() {
                          <div className="flex flex-col items-end space-y-1">
                             <span className="text-gray-300">Haze ☁️</span>
                             <span className="bg-purple-500/30 text-purple-200 border border-purple-500/50 px-2 py-0.5 rounded text-[9px] font-bold tracking-widest uppercase">Regime: Active</span>
-                            <span className="bg-red-500/30 text-red-200 border border-red-500/50 px-2 py-0.5 rounded text-[9px] font-bold tracking-widest uppercase">Heavy Rain Prob: 78%</span>
+                            <span className="bg-red-500/30 text-red-200 border border-red-500/50 px-2 py-0.5 rounded text-[9px] font-bold tracking-widest uppercase">Heavy Rain Prob: 78% (DEMO)</span>
                          </div>
                       </div>
                       <div className="flex space-x-4 mb-2">
@@ -201,7 +201,7 @@ export default function Home() {
                    <p className="text-sm font-black text-gray-900">Cyclone Warning</p>
                    <span className="text-[10px] font-bold bg-red-100 text-red-600 px-2 py-1 rounded">RED ALERT</span>
                 </div>
-                <p className="text-xs text-gray-600 mt-2 leading-relaxed">Expected landfall near Odisha coast by evening. Wind speeds exceeding 120kmph.</p>
+                <p className="text-xs text-gray-600 mt-2 leading-relaxed">Expected landfall near Odisha coast by evening. Wind speeds exceeding 120kmph. (Simulated Demo Event)</p>
                 <Link href="/alerts" className="text-xs font-bold text-blue-600 mt-3 inline-flex items-center hover:underline">View details <ChevronRight size={12}/></Link>
               </div>
 
@@ -259,3 +259,6 @@ export default function Home() {
     </div>
   );
 }
+
+
+
