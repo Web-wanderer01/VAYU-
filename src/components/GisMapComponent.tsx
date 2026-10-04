@@ -226,7 +226,7 @@ export default function GisMapComponent() {
           
           <LayersControl position="topright">
             <LayersControl.BaseLayer checked name="Dark Satellite (Command)">
-              <TileLayer url="https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png" attribution='&copy; Stadia Maps' />
+              <TileLayer url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" attribution='&copy; Stadia Maps' />
             </LayersControl.BaseLayer>
             <LayersControl.BaseLayer name="Terrain / Topo">
               <TileLayer url="https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png" attribution='&copy; OpenTopoMap' />
@@ -275,3 +275,4 @@ export default function GisMapComponent() {
     </div>
   );
 }
+
